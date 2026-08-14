@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeBrain - RAG Codebase Chatbot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --border-color: #30363d;
+            --text-primary: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent: #58a6ff;
+            --accent-hover: #79b8ff;
+            --success: #238636;
+            --success-hover: #2ea043;
+            --code-bg: #161b22;
+            --user-msg-bg: #1f4d7a;
+            --bot-msg-bg: #21262d;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 24px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .logo-icon {
+            width: 28px;
+            height: 28px;
+            background: var(--accent);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .stats {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            background: var(--bg-secondary);
+        }
+
+        .btn-primary {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .btn-primary:hover {
+            background: var(--success-hover);
+            border-color: var(--success-hover);
+        }
+
+        /* Main layout */
+        .main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 300px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            gap: 16px;
+            overflow-y: auto;
+        }
+
+        .sidebar h3 {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+        }
+
+        .index-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .index-input {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 13px;
+            font-family: monospace;
+        }
+
+        .index-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-row .btn {
+            flex: 1;
+        }
+
+        .btn-browse {
+            background: var(--bg-tertiary);
+            white-space: nowrap;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .checkbox-row input {
+            accent-color: var(--accent);
+        }
+
+        .code-textarea {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 12px;
+            font-family: 'SF Mono', Monaco, monospace;
+            resize: vertical;
+            min-height: 80px;
+            max-height: 200px;
+        }
+
+        .code-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .section-divider {
+            border-top: 1px solid var(--border-color);
+            margin: 4px 0;
+        }
+
+        .attached-code-badge {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 10px;
+            margin-bottom: 8px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--accent);
+        }
+
+        .attached-code-badge button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            padding: 0 4px;
+        }
+
+        .attach-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.15s;
+        }
+
+        .attach-btn:hover, .attach-btn.active {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            width: 90%;
+            max-width: 560px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal h3 {
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 12px;
+        }
+
+        .index-status {
+            font-size: 12px;
+            color: var(--text-secondary);
+            min-height: 20px;
+        }
+
+        .index-status.success {
+            color: #3fb950;
+        }
+
+        .index-status.error {
+            color: #f85149;
+        }
+
+        /* Indexed codebase status panel */
+        .index-info-panel {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .index-info-panel.ready {
+            border-color: #238636;
+        }
+
+        .index-info-panel.indexing {
+            border-color: #d29922;
+        }
+
+        .index-info-panel.error {
+            border-color: #f85149;
+        }
+
+        .index-info-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        .status-dot.ready { background: #3fb950; box-shadow: 0 0 6px #3fb950; }
+        .status-dot.indexing { background: #d29922; animation: pulse 1s infinite; }
+        .status-dot.error { background: #f85149; }
+        .status-dot.empty { background: #484f58; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .index-info-details {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .index-info-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .index-info-row span:last-child {
+            color: var(--text-primary);
+            text-align: right;
+            word-break: break-all;
+        }
+
+        .file-list-toggle {
+            margin-top: 4px;
+            cursor: pointer;
+            color: var(--accent);
+            font-size: 11px;
+            user-select: none;
+        }
+
+        .file-list {
+            display: none;
+            margin-top: 6px;
+            max-height: 120px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 10px;
+            color: var(--text-secondary);
+            list-style: none;
+            padding: 0;
+        }
+
+        .file-list.open { display: block; }
+
+        .file-list li {
+            padding: 2px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .file-list li:last-child { border-bottom: none; }
+
+        .settings-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .setting-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .setting-input {
+            width: 80px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 12px;
+        }
+
+        /* Chat area */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .welcome {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .welcome h2 {
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            font-size: 22px;
+        }
+
+        .welcome p {
+            font-size: 14px;
+            line-height: 1.6;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 100%;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+            font-weight: 600;
+        }
+
+        .message.user .message-avatar {
+            background: var(--user-msg-bg);
+        }
+
+        .message.bot .message-avatar {
+            background: var(--bot-msg-bg);
+            border: 1px solid var(--border-color);
+        }
+
+        .message-content {
+            flex: 1;
+            min-width: 0;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .message.user .message-content {
+            background: var(--user-msg-bg);
+        }
+
+        .message.bot .message-content {
+            background: var(--bot-msg-bg);
+            border: 1px solid var(--border-color);
+        }
+
+        .message-content pre {
+            background: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            margin: 8px 0;
+            overflow-x: auto;
+            font-size: 13px;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        .message-content code {
+            background: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        .message-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .message-content p {
+            margin-bottom: 8px;
+        }
+
+        .message-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .message-content strong {
+            color: var(--accent);
+        }
+
+        /* Input area */
+        .input-area {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+            resize: none;
+            min-height: 44px;
+            max-height: 150px;
+            font-family: inherit;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            border: none;
+            background: var(--accent);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+            flex-shrink: 0;
+        }
+
+        .send-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Typing indicator */
+        .typing {
+            display: flex;
+            gap: 4px;
+            padding: 8px 0;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-4px); opacity: 1; }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #484f58;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">CB</div>
+            <span>CodeBrain</span>
+        </div>
+        <div class="stats" id="stats">Not indexed</div>
+        <div class="header-actions">
+            <button class="btn" onclick="clearChat()">Clear Chat</button>
+        </div>
+    </header>
+
+    <div class="main">
+        <aside class="sidebar">
+            <div class="index-info-panel" id="indexInfoPanel">
+                <div class="index-info-header">
+                    <span class="status-dot empty" id="statusDot"></span>
+                    <span id="indexStatusLabel">No codebase loaded</span>
+                </div>
+                <div class="index-info-details" id="indexInfoDetails" style="display:none;">
+                    <div class="index-info-row">
+                        <span>Source</span>
+                        <span id="indexSourceName">—</span>
+                    </div>
+                    <div class="index-info-row">
+                        <span>Files</span>
+                        <span id="indexFileCount">0</span>
+                    </div>
+                    <div class="index-info-row">
+                        <span>Chunks</span>
+                        <span id="indexChunkCount">0</span>
+                    </div>
+                    <div class="index-info-row">
+                        <span>Languages</span>
+                        <span id="indexLanguages">—</span>
+                    </div>
+                    <div class="file-list-toggle" id="fileListToggle" onclick="toggleFileList()">
+                        ▶ Show indexed files
+                    </div>
+                    <ul class="file-list" id="indexFileList"></ul>
+                </div>
+            </div>
+
+            <div class="index-section">
+                <h3>Index Codebase</h3>
+                <p style="font-size:11px;color:var(--text-secondary);line-height:1.4;">
+                    Browse a folder from your computer, or enter a server path below.
+                </p>
+                <div class="btn-row">
+                    <button class="btn btn-browse" onclick="browseFolder()">Browse Folder</button>
+                    <button class="btn btn-primary" onclick="indexCodebase()">Index Path</button>
+                </div>
+                <input type="text" class="index-input" id="indexPath" placeholder="Server path (e.g. . or C:\project)" value=".">
+                <label class="checkbox-row">
+                    <input type="checkbox" id="mergeIndex">
+                    <span>Merge with existing index (don't replace)</span>
+                </label>
+                <input type="file" id="folderPicker" webkitdirectory multiple style="display:none" onchange="handleFolderSelect(event)">
+                <div class="index-status" id="indexStatus"></div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="index-section">
+                <h3>Add Code Manually</h3>
+                <p style="font-size:11px;color:var(--text-secondary);line-height:1.4;">
+                    Paste a code snippet to index it for questions.
+                </p>
+                <input type="text" class="index-input" id="snippetPath" placeholder="Filename (e.g. utils.py)" value="pasted/snippet.py">
+                <textarea class="code-textarea" id="snippetCode" placeholder="Paste your code here..."></textarea>
+                <button class="btn btn-primary" onclick="addSnippet()">Add to Index</button>
+                <div class="index-status" id="snippetStatus"></div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="settings-section">
+                <h3>Settings</h3>
+                <div class="setting-row">
+                    <span class="setting-label">Results</span>
+                    <input type="number" class="setting-input" id="nResults" value="5" min="1" max="20">
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Temperature</span>
+                    <input type="number" class="setting-input" id="temperature" value="0.3" min="0" max="2" step="0.1">
+                </div>
+            </div>
+        </aside>
+
+        <div class="chat-container">
+            <div class="messages" id="messages">
+                <div class="welcome">
+                    <h2>Welcome to CodeBrain</h2>
+                    <p>Get started in three ways:<br><br>
+                    <strong>1. Browse Folder</strong> — pick a project folder from your computer (like Cursor/Codex)<br>
+                    <strong>2. Index Path</strong> — type a path on the server (use <code>.</code> for the current folder)<br>
+                    <strong>3. Paste Code</strong> — add individual snippets in the sidebar<br><br>
+                    Then ask questions about your code below. Use the <strong>+</strong> button to attach code to a single question.</p>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <div id="attachedCodeBadge" style="display:none;" class="attached-code-badge">
+                    <span>Code attached to this message</span>
+                    <button onclick="clearAttachedCode()" title="Remove">&times;</button>
+                </div>
+                <div class="input-wrapper">
+                    <button class="attach-btn" id="attachBtn" onclick="openAttachModal()" title="Attach code to this question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                    <textarea
+                        class="chat-input"
+                        id="chatInput"
+                        placeholder="Ask about your codebase..."
+                        rows="1"
+                        onkeydown="handleKeyDown(event)"
+                        oninput="autoResize(this)"
+                    ></textarea>
+                    <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attach code modal -->
+    <div class="modal-overlay" id="attachModal">
+        <div class="modal">
+            <h3>Attach Code to Question</h3>
+            <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">
+                Paste code here. It will be sent with your next question (without indexing).
+            </p>
+            <textarea class="code-textarea" id="attachCodeInput" style="min-height:200px;max-height:400px;width:100%;" placeholder="Paste code here..."></textarea>
+            <div class="modal-actions">
+                <button class="btn" onclick="closeAttachModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmAttachCode()">Attach</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        let isLoading = false;
+        let attachedCode = '';
+        let currentFolderName = '';
+        let isIndexing = false;
+
+        const SKIP_DIRS = new Set([
+            '.git', '.svn', '.hg', 'node_modules', '__pycache__', '.venv',
+            'venv', 'env', '.env', 'dist', 'build', 'target', 'vendor',
+            '.idea', '.vs', 'bin', 'obj', 'out', 'coverage',
+            '.pytest_cache', '.mypy_cache', '.tox', '.next', '.nuxt',
+            'chroma_db', '.chroma', 'embeddings', 'tmp', 'temp', 'log', 'logs'
+        ]);
+
+        const SKIP_EXTENSIONS = new Set([
+            '.exe', '.dll', '.so', '.dylib', '.bin',
+            '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.ico', '.svg',
+            '.mp3', '.mp4', '.avi', '.mov', '.zip', '.tar', '.gz',
+            '.pdf', '.woff', '.woff2', '.ttf', '.wasm', '.class'
+        ]);
+
+        function shouldSkipPath(relativePath) {
+            const parts = relativePath.replace(/\\/g, '/').split('/');
+            for (let i = 0; i < parts.length - 1; i++) {
+                const part = parts[i];
+                if (part.startsWith('.') && !['.github', '.vscode', '.ci'].includes(part)) return true;
+                if (SKIP_DIRS.has(part)) return true;
+            }
+            const name = parts[parts.length - 1];
+            if (name.includes('.min.')) return true;
+            const ext = name.includes('.') ? '.' + name.split('.').pop().toLowerCase() : '';
+            if (SKIP_EXTENSIONS.has(ext)) return true;
+            return false;
+        }
+
+        function setIndexStatus(message, type = '') {
+            const status = document.getElementById('indexStatus');
+            status.textContent = message;
+            status.className = 'index-status' + (type ? ' ' + type : '');
+        }
+
+        function isMergeIndex() {
+            return document.getElementById('mergeIndex').checked;
+        }
+
+        function setIndexingState(indexing) {
+            isIndexing = indexing;
+            document.querySelectorAll('.btn-browse, .btn-primary').forEach(btn => {
+                if (btn.closest('.index-section') || btn.classList.contains('btn-browse')) {
+                    btn.disabled = indexing;
+                }
+            });
+        }
+
+        function updateIndexPanel(data) {
+            const panel = document.getElementById('indexInfoPanel');
+            const dot = document.getElementById('statusDot');
+            const label = document.getElementById('indexStatusLabel');
+            const details = document.getElementById('indexInfoDetails');
+            const statsEl = document.getElementById('stats');
+
+            const status = data.index_status || (data.indexed_chunks > 0 ? 'ready' : 'empty');
+            const chunks = data.indexed_chunks || data.chunks || 0;
+            const files = data.indexed_files || data.files || 0;
+            const sourceName = data.source_name || null;
+            const filePaths = data.file_paths || [];
+
+            dot.className = 'status-dot ' + status;
+            panel.className = 'index-info-panel' + (status !== 'empty' ? ' ' + status : '');
+
+            if (status === 'indexing') {
+                label.textContent = 'Indexing...';
+                details.style.display = 'none';
+                statsEl.textContent = 'Indexing...';
+            } else if (status === 'ready' && chunks > 0) {
+                label.textContent = 'Ready to chat';
+                details.style.display = 'flex';
+                document.getElementById('indexSourceName').textContent = sourceName || 'Indexed codebase';
+                document.getElementById('indexFileCount').textContent = files;
+                document.getElementById('indexChunkCount').textContent = chunks;
+                document.getElementById('indexLanguages').textContent =
+                    (data.languages && data.languages.length) ? data.languages.join(', ') : '—';
+
+                const fileList = document.getElementById('indexFileList');
+                fileList.innerHTML = filePaths.map(f => `<li>${f}</li>`).join('');
+                if (files > filePaths.length) {
+                    fileList.innerHTML += `<li>... and ${files - filePaths.length} more</li>`;
+                }
+                document.getElementById('fileListToggle').textContent =
+                    `▶ Show indexed files (${files})`;
+
+                statsEl.textContent = `${sourceName} · ${files} files · ${chunks} chunks`;
+            } else if (status === 'error') {
+                label.textContent = 'Indexing failed';
+                details.style.display = 'none';
+                statsEl.textContent = 'Indexing failed';
+            } else {
+                label.textContent = 'No codebase loaded';
+                details.style.display = 'none';
+                statsEl.textContent = 'Not indexed';
+            }
+        }
+
+        function toggleFileList() {
+            const list = document.getElementById('indexFileList');
+            const toggle = document.getElementById('fileListToggle');
+            const open = list.classList.toggle('open');
+            const countMatch = toggle.textContent.match(/\((\d+)\)/);
+            const count = countMatch ? countMatch[1] : '0';
+            toggle.textContent = `${open ? '▼ Hide' : '▶ Show'} indexed files (${count})`;
+        }
+
+        function handleIndexResult(data, folderName, showNotice = true) {
+            if (data.status === 'success') {
+                const name = data.source_name || folderName || 'Indexed codebase';
+                setIndexStatus(`✓ ${name}: ${data.files} files, ${data.chunks} chunks indexed`, 'success');
+                updateIndexPanel({
+                    index_status: 'ready',
+                    indexed_chunks: data.chunks,
+                    indexed_files: data.files,
+                    source_name: name,
+                    languages: data.languages,
+                    file_paths: data.file_paths || [],
+                });
+                if (showNotice) {
+                    showIndexReadyMessage(name, data.files, data.chunks);
+                }
+            } else {
+                setIndexStatus(data.message || 'Indexing failed', 'error');
+                updateIndexPanel({ index_status: 'error' });
+            }
+            setIndexingState(false);
+        }
+
+        function showIndexReadyMessage(name, files, chunks) {
+            const messages = document.getElementById('messages');
+            const notice = document.createElement('div');
+            notice.className = 'message bot';
+            notice.innerHTML = `
+                <div class="message-avatar">CB</div>
+                <div class="message-content">
+                    <p><strong>Codebase loaded!</strong> I now have access to <strong>${name}</strong> (${files} files, ${chunks} chunks). Ask me anything about this code.</p>
+                </div>
+            `;
+            if (messages.querySelector('.welcome')) {
+                messages.innerHTML = '';
+            }
+            messages.appendChild(notice);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        // Load stats on startup
+        async function loadStats() {
+            try {
+                const res = await fetch(`${API_BASE}/api/stats`);
+                const data = await res.json();
+                updateIndexPanel(data);
+            } catch (e) {
+                document.getElementById('stats').textContent = 'API unavailable';
+            }
+        }
+
+        loadStats();
+
+        async function indexCodebase() {
+            const path = document.getElementById('indexPath').value;
+            setIndexingState(true);
+            updateIndexPanel({ index_status: 'indexing' });
+            setIndexStatus('Indexing server path...');
+
+            try {
+                const res = await fetch(`${API_BASE}/api/index`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path, merge: isMergeIndex() })
+                });
+                const data = await res.json();
+                const folderName = path.split(/[/\\]/).filter(Boolean).pop() || path;
+                handleIndexResult(data, folderName);
+            } catch (e) {
+                setIndexStatus('Error: ' + e.message, 'error');
+                updateIndexPanel({ index_status: 'error' });
+                setIndexingState(false);
+            }
+        }
+
+        async function uploadFiles(files, folderName) {
+            if (!files.length) {
+                setIndexStatus('No code files found in folder', 'error');
+                updateIndexPanel({ index_status: 'error' });
+                setIndexingState(false);
+                return;
+            }
+
+            setIndexingState(true);
+            updateIndexPanel({ index_status: 'indexing' });
+            setIndexStatus(`Indexing ${files.length} files from "${folderName}"...`);
+
+            try {
+                const res = await fetch(`${API_BASE}/api/index/upload`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        files,
+                        merge: isMergeIndex(),
+                        source_name: folderName
+                    })
+                });
+                const data = await res.json();
+                handleIndexResult(data, folderName);
+            } catch (e) {
+                setIndexStatus('Error: ' + e.message, 'error');
+                updateIndexPanel({ index_status: 'error' });
+                setIndexingState(false);
+            }
+        }
+
+        async function browseFolder() {
+            if ('showDirectoryPicker' in window) {
+                try {
+                    const dirHandle = await window.showDirectoryPicker();
+                    currentFolderName = dirHandle.name;
+                    setIndexStatus(`Reading folder "${currentFolderName}"...`);
+                    const files = await readDirectoryHandle(dirHandle, dirHandle.name + '/');
+                    await uploadFiles(files, currentFolderName);
+                } catch (e) {
+                    if (e.name !== 'AbortError') {
+                        setIndexStatus('Error: ' + e.message, 'error');
+                        updateIndexPanel({ index_status: 'error' });
+                    }
+                }
+            } else {
+                document.getElementById('folderPicker').click();
+            }
+        }
+
+        async function readDirectoryHandle(dirHandle, basePath) {
+            const files = [];
+            for await (const entry of dirHandle.values()) {
+                if (entry.kind === 'file') {
+                    const relPath = basePath + entry.name;
+                    if (shouldSkipPath(relPath)) continue;
+                    try {
+                        const file = await entry.getFile();
+                        if (file.size > 500000) continue;
+                        const content = await file.text();
+                        if (content.includes('\x00')) continue;
+                        files.push({ path: relPath, content });
+                    } catch (e) { /* skip unreadable files */ }
+                } else if (entry.kind === 'directory') {
+                    if (shouldSkipPath(basePath + entry.name + '/dummy')) continue;
+                    const subFiles = await readDirectoryHandle(entry, basePath + entry.name + '/');
+                    files.push(...subFiles);
+                }
+            }
+            return files;
+        }
+
+        async function handleFolderSelect(event) {
+            const fileList = Array.from(event.target.files);
+            event.target.value = '';
+            if (!fileList.length) return;
+
+            const firstPath = fileList[0].webkitRelativePath || fileList[0].name;
+            currentFolderName = firstPath.includes('/')
+                ? firstPath.split('/')[0]
+                : firstPath;
+
+            setIndexStatus(`Reading ${fileList.length} files from "${currentFolderName}"...`);
+            const files = [];
+            for (const file of fileList) {
+                const path = file.webkitRelativePath || file.name;
+                if (shouldSkipPath(path)) continue;
+                if (file.size > 500000) continue;
+                try {
+                    const content = await file.text();
+                    if (content.includes('\x00')) continue;
+                    files.push({ path, content });
+                } catch (e) { /* skip */ }
+            }
+            await uploadFiles(files, currentFolderName);
+        }
+
+        async function addSnippet() {
+            const content = document.getElementById('snippetCode').value.trim();
+            const path = document.getElementById('snippetPath').value.trim() || 'pasted/snippet.py';
+            const status = document.getElementById('snippetStatus');
+
+            if (!content) {
+                status.textContent = 'Please paste some code first';
+                status.className = 'index-status error';
+                return;
+            }
+
+            status.textContent = 'Adding to index...';
+            status.className = 'index-status';
+            setIndexingState(true);
+            updateIndexPanel({ index_status: 'indexing' });
+
+            try {
+                const res = await fetch(`${API_BASE}/api/index/snippets`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        snippets: [{ content, path }],
+                        merge: true
+                    })
+                });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    status.textContent = `Added snippet (${data.chunks} total chunks)`;
+                    status.className = 'index-status success';
+                    document.getElementById('snippetCode').value = '';
+                    handleIndexResult(data, path, false);
+                } else {
+                    status.textContent = data.message || 'Failed to add snippet';
+                    status.className = 'index-status error';
+                    updateIndexPanel({ index_status: 'error' });
+                    setIndexingState(false);
+                }
+            } catch (e) {
+                status.textContent = 'Error: ' + e.message;
+                status.className = 'index-status error';
+                updateIndexPanel({ index_status: 'error' });
+                setIndexingState(false);
+            }
+        }
+
+        function openAttachModal() {
+            document.getElementById('attachModal').classList.add('open');
+            if (attachedCode) {
+                document.getElementById('attachCodeInput').value = attachedCode;
+            }
+        }
+
+        function closeAttachModal() {
+            document.getElementById('attachModal').classList.remove('open');
+        }
+
+        function confirmAttachCode() {
+            attachedCode = document.getElementById('attachCodeInput').value.trim();
+            closeAttachModal();
+            updateAttachUI();
+        }
+
+        function clearAttachedCode() {
+            attachedCode = '';
+            document.getElementById('attachCodeInput').value = '';
+            updateAttachUI();
+        }
+
+        function updateAttachUI() {
+            const badge = document.getElementById('attachedCodeBadge');
+            const btn = document.getElementById('attachBtn');
+            if (attachedCode) {
+                badge.style.display = 'flex';
+                btn.classList.add('active');
+            } else {
+                badge.style.display = 'none';
+                btn.classList.remove('active');
+            }
+        }
+
+        function addMessage(role, content, isStreaming = false) {
+            const messages = document.getElementById('messages');
+
+            // Remove welcome message on first real message
+            if (messages.querySelector('.welcome')) {
+                messages.innerHTML = '';
+            }
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${role}`;
+            msgDiv.innerHTML = `
+                <div class="message-avatar">${role === 'user' ? 'You' : 'CB'}</div>
+                <div class="message-content" id="msg-${Date.now()}">${formatContent(content)}</div>
+            `;
+            messages.appendChild(msgDiv);
+            messages.scrollTop = messages.scrollHeight;
+            return msgDiv.querySelector('.message-content');
+        }
+
+        function updateMessage(element, content) {
+            element.innerHTML = formatContent(content);
+            const messages = document.getElementById('messages');
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function formatContent(text) {
+            // Escape HTML
+            let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+            // Code blocks
+            html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+                return `<pre><code>${code.trim()}</code></pre>`;
+            });
+
+            // Inline code
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            // Bold
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+            // Paragraphs
+            const paragraphs = html.split('\n\n');
+            html = paragraphs.map(p => p.trim() ? `<p>${p.replace(/\n/g, '<br>')}</p>` : '').join('');
+
+            return html;
+        }
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+        }
+
+        function handleKeyDown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            if (isLoading) return;
+
+            const input = document.getElementById('chatInput');
+            const question = input.value.trim();
+            if (!question) return;
+
+            input.value = '';
+            input.style.height = 'auto';
+            isLoading = true;
+            document.getElementById('sendBtn').disabled = true;
+
+            // Add user message
+            let displayQuestion = question;
+            if (attachedCode) {
+                displayQuestion = question + '\n\n```\n' + attachedCode.slice(0, 200) + (attachedCode.length > 200 ? '...' : '') + '\n```';
+            }
+            addMessage('user', displayQuestion);
+
+            const codeToSend = attachedCode;
+            attachedCode = '';
+            updateAttachUI();
+            document.getElementById('attachCodeInput').value = '';
+
+            // Add typing indicator
+            const messages = document.getElementById('messages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message bot';
+            typingDiv.id = 'typing-indicator';
+            typingDiv.innerHTML = `
+                <div class="message-avatar">CB</div>
+                <div class="message-content">
+                    <div class="typing">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            `;
+            messages.appendChild(typingDiv);
+            messages.scrollTop = messages.scrollHeight;
+
+            const nResults = parseInt(document.getElementById('nResults').value) || 5;
+            const temperature = parseFloat(document.getElementById('temperature').value) || 0.3;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/ask`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        question,
+                        n_results: nResults,
+                        temperature,
+                        stream: true,
+                        attached_code: codeToSend || null
+                    })
+                });
+
+                // Remove typing indicator
+                typingDiv.remove();
+
+                const contentEl = addMessage('bot', '');
+                let fullText = '';
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    const chunk = decoder.decode(value, { stream: true });
+                    fullText += chunk;
+                    updateMessage(contentEl, fullText);
+                }
+            } catch (e) {
+                typingDiv.remove();
+                addMessage('bot', 'Error: ' + e.message);
+            } finally {
+                isLoading = false;
+                document.getElementById('sendBtn').disabled = false;
+            }
+        }
+
+        function clearChat() {
+            document.getElementById('messages').innerHTML = `
+                <div class="welcome">
+                    <h2>Welcome to CodeBrain</h2>
+                    <p>Get started in three ways:<br><br>
+                    <strong>1. Browse Folder</strong> — pick a project folder from your computer (like Cursor/Codex)<br>
+                    <strong>2. Index Path</strong> — type a path on the server (use <code>.</code> for the current folder)<br>
+                    <strong>3. Paste Code</strong> — add individual snippets in the sidebar<br><br>
+                    Then ask questions about your code below. Use the <strong>+</strong> button to attach code to a single question.</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
